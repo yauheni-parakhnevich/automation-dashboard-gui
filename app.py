@@ -1,7 +1,7 @@
 import sys
-from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QGraphicsColorizeEffect
-from PyQt6.QtGui import QColor, QPalette, QFont, QPixmap 
+from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QGraphicsColorizeEffect
+from PyQt5.QtGui import QColor, QPalette, QFont, QPixmap 
 
 class Color(QFrame):
     def __init__(self, color):
