@@ -28,7 +28,7 @@ class Moisture:
 class DashboardWidget(QFrame):
     def __init__(self, widgetTitle):
         super(DashboardWidget, self).__init__()
-        labelFont = QFont("Arial", 70)
+        labelFont = QFont("Arial", 60)
         labelFont.setBold(True)
 
         self.setFrameShape(QFrame.Shape.StyledPanel)
