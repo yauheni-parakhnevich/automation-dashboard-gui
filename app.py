@@ -42,7 +42,7 @@ class DashboardWidget(QFrame):
         
         titleLabel = QLabel(widgetTitle)       
         titleLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        titleFont = QFont("Arial", 50)
+        titleFont = QFont("Arial", 40)
         titleFont.setBold(True)        
         titleLabel.setFont(titleFont)
         
@@ -140,7 +140,7 @@ class DashboardLevelWidget(QFrame):
         
         titleLabel = QLabel(widgetTitle)       
         titleLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        titleFont = QFont("Arial", 50)
+        titleFont = QFont("Arial", 40)
         titleFont.setBold(True)        
         titleLabel.setFont(titleFont)
         
