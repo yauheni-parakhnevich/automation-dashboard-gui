@@ -28,7 +28,7 @@ class Moisture:
 class DashboardWidget(QFrame):
     def __init__(self, widgetTitle):
         super(DashboardWidget, self).__init__()
-        labelFont = QFont("Arial", 60)
+        labelFont = QFont("Arial", 70)
         labelFont.setBold(True)
 
         self.setFrameShape(QFrame.Shape.StyledPanel)
@@ -36,13 +36,13 @@ class DashboardWidget(QFrame):
         layout = QVBoxLayout()
         
         title = QWidget()
-        title.setFixedHeight(50)
+        title.setFixedHeight(80)
 
         titleLayout = QVBoxLayout()
         
         titleLabel = QLabel(widgetTitle)       
         titleLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        titleFont = QFont("Arial", 24)
+        titleFont = QFont("Arial", 50)
         titleFont.setBold(True)        
         titleLabel.setFont(titleFont)
         
@@ -53,11 +53,11 @@ class DashboardWidget(QFrame):
         body = QWidget()
         bodyLayout = QGridLayout()
 
-        self.labelTemperature = QLabel("24")
+        self.labelTemperature = QLabel("36")
         self.labelTemperature.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.labelTemperature.setFont(labelFont)
 
-        self.labelHumidity = QLabel("33")
+        self.labelHumidity = QLabel("45")
         self.labelHumidity.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.labelHumidity.setFont(labelFont)
         
@@ -126,7 +126,7 @@ class DashboardWidget(QFrame):
 class DashboardLevelWidget(QFrame):
     def __init__(self, widgetTitle, icon):
         super(DashboardLevelWidget, self).__init__()
-        labelFont = QFont("Arial", 60)
+        labelFont = QFont("Arial", 70)
         labelFont.setBold(True)
 
         self.setFrameShape(QFrame.Shape.StyledPanel)
@@ -134,13 +134,13 @@ class DashboardLevelWidget(QFrame):
         layout = QVBoxLayout()
         
         title = QWidget()
-        title.setFixedHeight(50)
+        title.setFixedHeight(80)
 
         titleLayout = QVBoxLayout()
         
         titleLabel = QLabel(widgetTitle)       
         titleLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        titleFont = QFont("Arial", 24)
+        titleFont = QFont("Arial", 50)
         titleFont.setBold(True)        
         titleLabel.setFont(titleFont)
         
@@ -325,8 +325,8 @@ class MainWindow(QMainWindow):
 app = QApplication(sys.argv)
 
 window = MainWindow()
-window.setMinimumSize(1024, 600)
-#window.show()
+#window.setMinimumSize(1366, 768)
+window.show()
 window.showFullScreen()
 
 app.exec()
