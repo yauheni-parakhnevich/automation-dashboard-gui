@@ -317,11 +317,16 @@ class MainWindow(QMainWindow):
             logging.info(flowers)
         except Exception as e:
             print(f"Exception occurred: {e}")
-    
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.close()
+
 app = QApplication(sys.argv)
 
 window = MainWindow()
 window.setMinimumSize(1024, 600)
-window.show()
+#window.show()
+window.showFullScreen()
 
 app.exec()
