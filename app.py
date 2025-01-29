@@ -3,6 +3,7 @@ import sys
 import requests
 import logging
 from influxdb import InfluxDBClient
+from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import QSize, Qt, QTimer
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QGraphicsColorizeEffect
 from PyQt5.QtGui import QColor, QPalette, QFont, QPixmap 
@@ -328,5 +329,8 @@ window = MainWindow()
 #window.setMinimumSize(1366, 768)
 window.show()
 window.showFullScreen()
+
+# Hide mouse cursor
+window.setCursor(QCursor(Qt.BlankCursor))
 
 app.exec()
