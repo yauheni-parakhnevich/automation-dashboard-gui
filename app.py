@@ -67,17 +67,17 @@ class DashboardWidget(QFrame):
         self.labelHumidity.setGraphicsEffect(colorEffect)
 
         temperaturePixmap = QPixmap('images/temperature.png')
-        temperatureIcon = QLabel()
-        temperatureIcon.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        temperatureIcon.setPixmap(temperaturePixmap)
+        self.temperatureIcon = QLabel()
+        self.temperatureIcon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.temperatureIcon.setPixmap(temperaturePixmap)
 
         humidityPixmap = QPixmap('images/humidity.png')
-        humidityIcon = QLabel()
-        humidityIcon.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        humidityIcon.setPixmap(humidityPixmap)
+        self.humidityIcon = QLabel()
+        self.humidityIcon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.humidityIcon.setPixmap(humidityPixmap)
 
-        bodyLayout.addWidget(temperatureIcon, 0, 0)
-        bodyLayout.addWidget(humidityIcon, 1, 0)
+        bodyLayout.addWidget(self.temperatureIcon, 0, 0)
+        bodyLayout.addWidget(self.humidityIcon, 1, 0)
         bodyLayout.addWidget(self.labelTemperature, 0, 1)
         bodyLayout.addWidget(self.labelHumidity, 1, 1)
 
@@ -124,7 +124,24 @@ class DashboardWidget(QFrame):
         else:
             return 'black'
 
+    def setDarkTheme(self):
+        temperaturePixmap = QPixmap('images/temperature_dark.png')
+        self.temperatureIcon.setPixmap(temperaturePixmap)
+
+        humidityPixmap = QPixmap('images/humidity_dark.png')
+        self.humidityIcon.setPixmap(humidityPixmap)
+
+    def setLightTheme(self):
+        temperaturePixmap = QPixmap('images/temperature.png')
+        self.temperatureIcon.setPixmap(temperaturePixmap)
+
+        humidityPixmap = QPixmap('images/humidity.png')
+        self.humidityIcon.setPixmap(humidityPixmap)
+
 class DashboardLevelWidget(QFrame):
+    currentLevel = 0
+    currentTimestamp = ""
+
     def __init__(self, widgetTitle, icon):
         super(DashboardLevelWidget, self).__init__()
         labelFont = QFont("Arial", 70)
@@ -157,12 +174,21 @@ class DashboardLevelWidget(QFrame):
         iconLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         iconLabel.setPixmap(iconPixmap)
 
-        self.levelIcons = []
-        self.levelIcons.append(QPixmap('images/level1.png'))
-        self.levelIcons.append(QPixmap('images/level2.png'))
-        self.levelIcons.append(QPixmap('images/level3.png'))
-        self.levelIcons.append(QPixmap('images/level4.png'))
-        self.levelIcons.append(QPixmap('images/level5.png'))        
+        self.levelIcons_light = []
+        self.levelIcons_light.append(QPixmap('images/level1.png'))
+        self.levelIcons_light.append(QPixmap('images/level2.png'))
+        self.levelIcons_light.append(QPixmap('images/level3.png'))
+        self.levelIcons_light.append(QPixmap('images/level4.png'))
+        self.levelIcons_light.append(QPixmap('images/level5.png')) 
+
+        self.levelIcons_dark = []
+        self.levelIcons_dark.append(QPixmap('images/level1_dark.png'))
+        self.levelIcons_dark.append(QPixmap('images/level2_dark.png'))
+        self.levelIcons_dark.append(QPixmap('images/level3_dark.png'))
+        self.levelIcons_dark.append(QPixmap('images/level4_dark.png'))
+        self.levelIcons_dark.append(QPixmap('images/level5_dark.png'))  
+
+        self.levelIcons = self.levelIcons_light       
 
         levelPixmap = self.levelIcons[0]
         self.iconLevel = QLabel()
@@ -186,10 +212,13 @@ class DashboardLevelWidget(QFrame):
 
         self.setLayout(layout)
 
-    def updateValues(self, value, timestamp_iso):
+    def updateValues(self, value = currentLevel, timestamp_iso = currentTimestamp):
         #self.labelTemperature.setText(str(temperature))
         #self.labelHumidity.setText(str(humidity))
         self.iconLevel.setPixmap(self.getLevelIcon(value))
+
+        self.currentLevel = value
+        self.currentTimestamp = timestamp_iso
 
         # Ensure timestamp is an integer
         try:
@@ -217,6 +246,14 @@ class DashboardLevelWidget(QFrame):
             return self.levelIcons[3]
         else:
             return self.levelIcons[4]
+
+    def setDarkTheme(self):
+        self.levelIcons = self.levelIcons_dark
+        self.updateValues()
+
+    def setLightTheme(self):
+        self.levelIcons = self.levelIcons_light
+        self.updateValues()
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -280,11 +317,17 @@ class MainWindow(QMainWindow):
         palette.setColor(QPalette.WindowText, QColor(255, 255, 255))
         QApplication.instance().setPalette(palette)
 
+        for key in self.widgets:
+            self.widgets[key].setDarkTheme()
+
     def setLightTheme(self):
         palette = QPalette()
         palette.setColor(QPalette.Window, QColor(255, 255, 255))
         palette.setColor(QPalette.WindowText, QColor(0, 0, 0))
         QApplication.instance().setPalette(palette)
+        
+        for key in self.widgets:
+            self.widgets[key].setLightTheme()
 
     def getMoisture(self, alias):
         #results = self.client.query('select last("Moisture") from "Flowers" where alias = \'' + alias + '\'')
