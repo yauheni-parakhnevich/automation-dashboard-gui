@@ -261,6 +261,31 @@ class MainWindow(QMainWindow):
         self.timer.start(300000)  # 5 minutes in milliseconds
         #self.timer.start(30000)
 
+        # Set up theme change timer
+        self.theme_timer = QTimer(self)
+        self.theme_timer.timeout.connect(self.applyTheme)
+        self.theme_timer.start(60000)  # Check every minute
+        self.applyTheme()  # Apply theme immediately        
+
+    def applyTheme(self):
+        current_hour = datetime.now().hour
+        if 20 <= current_hour or current_hour < 8:
+            self.setDarkTheme()
+        else:
+            self.setLightTheme()
+
+    def setDarkTheme(self):
+        palette = QPalette()
+        palette.setColor(QPalette.Window, QColor(45, 45, 45))
+        palette.setColor(QPalette.WindowText, QColor(255, 255, 255))
+        QApplication.instance().setPalette(palette)
+
+    def setLightTheme(self):
+        palette = QPalette()
+        palette.setColor(QPalette.Window, QColor(255, 255, 255))
+        palette.setColor(QPalette.WindowText, QColor(0, 0, 0))
+        QApplication.instance().setPalette(palette)
+
     def getMoisture(self, alias):
         #results = self.client.query('select last("Moisture") from "Flowers" where alias = \'' + alias + '\'')
         results = self.client.query('SELECT time, Moisture FROM Flowers WHERE alias = \'' + alias + '\'  ORDER BY time desc LIMIT 1')
