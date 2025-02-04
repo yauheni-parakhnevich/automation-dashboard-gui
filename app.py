@@ -213,7 +213,7 @@ class DashboardLevelWidget(QFrame):
 
         self.setLayout(layout)
 
-    def updateValues(self, value = currentLevel, timestamp_iso = currentTimestamp):
+    def updateValues(self, value, timestamp_iso):
         #self.labelTemperature.setText(str(temperature))
         #self.labelHumidity.setText(str(humidity))
         self.iconLevel.setPixmap(self.getLevelIcon(value))
@@ -251,11 +251,11 @@ class DashboardLevelWidget(QFrame):
 
     def setDarkTheme(self):
         self.levelIcons = self.levelIcons_dark
-        self.updateValues()
+        self.updateValues(self.currentLevel, self.currentTimestamp)
 
     def setLightTheme(self):
         self.levelIcons = self.levelIcons_light
-        self.updateValues()
+        self.updateValues(self.currentLevel, self.currentTimestamp)
 
 class MainWindow(QMainWindow):
     def __init__(self):
