@@ -307,11 +307,17 @@ class MainWindow(QMainWindow):
         self.applyTheme()  # Apply theme immediately        
 
     def applyTheme(self):
-        current_hour = datetime.now().hour
-        if 20 <= current_hour or current_hour < 8:
+        illumination = self.getIllumination()
+        if illumination < 20:
             self.setDarkTheme()
         else:
             self.setLightTheme()
+
+        #current_hour = datetime.now().hour
+        #if 20 <= current_hour or current_hour < 8:
+        #    self.setDarkTheme()
+        #else:
+        #    self.setLightTheme()
 
     def setDarkTheme(self):
         palette = QPalette()
@@ -330,6 +336,13 @@ class MainWindow(QMainWindow):
         
         for key in self.widgets:
             self.widgets[key].setLightTheme()
+
+    def getIllumination(self):
+        results = self.client.query('SELECT value FROM illuminationSensor ORDER BY time DESC LIMIT 1')
+
+        #print("Illumination", results.raw['series'][0]['values'][0][1])
+
+        return results.raw['series'][0]['values'][0][1]
 
     def getMoisture(self, alias):
         #results = self.client.query('select last("Moisture") from "Flowers" where alias = \'' + alias + '\'')
