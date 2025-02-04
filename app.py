@@ -116,6 +116,7 @@ class DashboardWidget(QFrame):
             self.timestampLabel.setText(f"Last updated: {formatted_time}")        
         except ValueError:
             self.timestampLabel.setText("Last updated: Invalid timestamp")
+            logging.error("Invalid timestamp format: " + timestamp_iso)
             return
         
     def humidityColor(self, humidity):
@@ -233,6 +234,7 @@ class DashboardLevelWidget(QFrame):
             self.timestampLabel.setText(f"Last updated: {formatted_time}")        
         except ValueError:
             self.timestampLabel.setText("Last updated: Invalid timestamp")
+            logging.error("Invalid timestamp format: " + timestamp_iso)
             return    
         
     def getLevelIcon(self, level):
@@ -385,7 +387,7 @@ class MainWindow(QMainWindow):
             logging.info("Flowers")
             logging.info(flowers)
         except Exception as e:
-            print(f"Exception occurred: {e}")
+            logging.error(f"Exception occurred: {e}")
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
