@@ -238,13 +238,13 @@ class DashboardLevelWidget(QFrame):
             return    
         
     def getLevelIcon(self, level):
-        if level < 10:
+        if level < 3:
             return self.levelIcons[0]
-        elif level < 13:
+        elif level < 6:
             return self.levelIcons[1]
-        elif level < 16:
+        elif level < 9:
             return self.levelIcons[2]    
-        elif level < 19:
+        elif level < 12:
             return self.levelIcons[3]
         else:
             return self.levelIcons[4]
