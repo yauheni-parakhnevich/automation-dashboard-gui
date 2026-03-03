@@ -289,7 +289,7 @@ class MainWindow(QMainWindow):
         logging.basicConfig(level=logging.DEBUG)
 
         logging.info("Connecting to the database")
-        self.client = InfluxDBClient(host='automation.lan', port=8086)
+        self.client = InfluxDBClient(host='automation.local', port=8086)
         self.client.switch_database('garden')
 
         self.fetchData()
