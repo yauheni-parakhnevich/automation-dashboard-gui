@@ -1,0 +1,4 @@
+PyQt5==5.15.11
+influxdb==5.3.2
+requests==2.32.5
+pytest==9.0.2
