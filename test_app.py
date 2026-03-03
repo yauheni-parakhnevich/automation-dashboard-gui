@@ -10,8 +10,10 @@ from app import (
     format_timestamp,
     Measure,
     Moisture,
+    DayForecast,
     DashboardWidget,
     DashboardLevelWidget,
+    DashboardWeatherWidget,
     MainWindow,
     CONFIG,
 )
@@ -164,7 +166,7 @@ class TestDashboardWidgetUpdateValues:
     def test_labels_update(self):
         self.w.updateValues(23.4, 55, "2024-01-15T12:00:00Z")
         assert self.w.labelTemperature.text() == "23.4"
-        assert self.w.labelHumidity.text() == "55"
+        assert self.w.labelHumidity.text() == "55.0"
         assert "13:00:00 15/01/2024" in self.w.timestampLabel.text()
 
 
@@ -247,11 +249,15 @@ class TestFetchData:
         moisture = Moisture(value=8.0, timestamp="2024-01-15T12:00:00Z")
 
         with patch.object(window, "getMeasure", return_value=measure), \
-             patch.object(window, "getMoisture", return_value=moisture):
+             patch.object(window, "getMoisture", return_value=moisture), \
+             patch.object(window, "getWeather", return_value=None):
             window.fetchData()
 
         assert window.widgets["workRoom"].labelTemperature.text() == "21.0"
         assert window.widgets["workRoom"].labelHumidity.text() == "50.0"
+        assert window.widgets["outdoor"].labelTemperature.text() == "21.0"
+        assert window.widgets["outdoor"].labelHumidity.text() == "50.0"
+
 
     def test_widgets_not_updated_on_none(self, main_window):
         window, mock_client = main_window
@@ -297,3 +303,98 @@ class TestApplyTheme:
             window.applyTheme()
             mock_light.assert_called_once()
             mock_dark.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# DayForecast dataclass
+# ---------------------------------------------------------------------------
+
+class TestDayForecast:
+    def test_defaults(self):
+        f = DayForecast()
+        assert f.date == ""
+        assert f.temp_max == 0
+        assert f.temp_min == 0
+        assert f.weathercode == 0
+
+    def test_custom_values(self):
+        f = DayForecast(date="2024-03-01", temp_max=15.0, temp_min=3.0, weathercode=61)
+        assert f.date == "2024-03-01"
+        assert f.temp_max == 15.0
+        assert f.temp_min == 3.0
+        assert f.weathercode == 61
+
+
+# ---------------------------------------------------------------------------
+# DashboardWeatherWidget
+# ---------------------------------------------------------------------------
+
+class TestDashboardWeatherWidget:
+    @pytest.fixture(autouse=True)
+    def widget(self):
+        self.w = DashboardWeatherWidget()
+
+    def test_update_values(self):
+        forecasts = [
+            DayForecast(date="2024-03-04", temp_max=12.0, temp_min=3.0, weathercode=0),
+            DayForecast(date="2024-03-05", temp_max=10.0, temp_min=1.0, weathercode=61),
+            DayForecast(date="2024-03-06", temp_max=8.0, temp_min=-2.0, weathercode=71),
+            DayForecast(date="2024-03-07", temp_max=14.0, temp_min=5.0, weathercode=3),
+            DayForecast(date="2024-03-08", temp_max=16.0, temp_min=7.0, weathercode=95),
+        ]
+        self.w.updateValues(forecasts)
+
+        assert self.w.dayLabels[0].text() == "Mo"
+        assert self.w.dayLabels[1].text() == "Di"
+        assert self.w.dayLabels[2].text() == "Mi"
+        assert self.w.dayLabels[3].text() == "Do"
+        assert self.w.dayLabels[4].text() == "Fr"
+
+        assert self.w.tempLabels[0].text() == "3° / 12°"
+        assert self.w.tempLabels[1].text() == "1° / 10°"
+        assert self.w.tempLabels[2].text() == "-2° / 8°"
+
+        assert self.w.condLabels[0].text() == "Klar"
+        assert self.w.condLabels[1].text() == "Regen"
+        assert self.w.condLabels[2].text() == "Schnee"
+        assert self.w.condLabels[3].text() == "Bewölkt"
+        assert self.w.condLabels[4].text() == "Gewitter"
+
+        assert "Last updated:" in self.w.timestampLabel.text()
+
+
+# ---------------------------------------------------------------------------
+# MainWindow.getWeather
+# ---------------------------------------------------------------------------
+
+class TestGetWeather:
+    def test_success(self, main_window):
+        window, _ = main_window
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "daily": {
+                "time": ["2024-03-04", "2024-03-05"],
+                "temperature_2m_max": [12.0, 10.0],
+                "temperature_2m_min": [3.0, 1.0],
+                "weathercode": [0, 61],
+            }
+        }
+        mock_response.raise_for_status = MagicMock()
+
+        with patch("app.requests.get", return_value=mock_response):
+            result = window.getWeather()
+
+        assert len(result) == 2
+        assert result[0].date == "2024-03-04"
+        assert result[0].temp_max == 12.0
+        assert result[0].temp_min == 3.0
+        assert result[0].weathercode == 0
+        assert result[1].weathercode == 61
+
+    def test_failure_returns_none(self, main_window):
+        window, _ = main_window
+
+        with patch("app.requests.get", side_effect=Exception("network error")):
+            result = window.getWeather()
+
+        assert result is None

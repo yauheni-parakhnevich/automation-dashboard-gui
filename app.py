@@ -3,6 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import sys
 import logging
+import requests
 from influxdb import InfluxDBClient
 from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import Qt, QTimer
@@ -16,6 +17,14 @@ CONFIG = {
     'DATA_REFRESH_INTERVAL_MS': 300000,
     'THEME_CHECK_INTERVAL_MS': 60000,
     'ILLUMINATION_THRESHOLD': 20,
+    'OPEN_METEO_URL': 'https://api.open-meteo.com/v1/forecast',
+    'OPEN_METEO_PARAMS': {
+        'latitude': 47.3967,
+        'longitude': 8.4478,
+        'daily': 'temperature_2m_max,temperature_2m_min,weathercode',
+        'timezone': 'Europe/Zurich',
+        'forecast_days': 5,
+    },
 }
 
 ZURICH_TZ = ZoneInfo("Europe/Zurich")
@@ -45,6 +54,14 @@ class Measure:
 class Moisture:
     value: float = 0
     timestamp: str = ""
+
+
+@dataclass
+class DayForecast:
+    date: str = ""
+    temp_max: float = 0
+    temp_min: float = 0
+    weathercode: int = 0
 
 
 class Color(QFrame):
@@ -130,8 +147,8 @@ class DashboardWidget(QFrame):
         self.setLayout(layout)
 
     def updateValues(self, temperature, humidity, timestamp_iso):
-        self.labelTemperature.setText(str(temperature))
-        self.labelHumidity.setText(str(humidity))
+        self.labelTemperature.setText(f"{temperature:.1f}")
+        self.labelHumidity.setText(f"{humidity:.1f}")
 
         self.colorEffect = QGraphicsColorizeEffect()
         self.colorEffect.setColor(QColor(self.humidityColor(humidity)))
@@ -257,6 +274,105 @@ class DashboardLevelWidget(QFrame):
         self.levelIcons = self.levelIcons_light
         self.updateValues(self.currentLevel, self.currentTimestamp)
 
+WMO_DESCRIPTIONS = {
+    0: "Klar", 1: "Klar", 2: "Bewölkt", 3: "Bewölkt",
+    45: "Nebel", 48: "Nebel",
+    51: "Nieselregen", 53: "Nieselregen", 55: "Nieselregen",
+    56: "Nieselregen", 57: "Nieselregen",
+    61: "Regen", 63: "Regen", 65: "Regen",
+    66: "Regen", 67: "Regen",
+    71: "Schnee", 73: "Schnee", 75: "Schnee", 77: "Schnee",
+    80: "Schauer", 81: "Schauer", 82: "Schauer",
+    85: "Schnee", 86: "Schnee",
+    95: "Gewitter", 96: "Gewitter", 99: "Gewitter",
+}
+
+GERMAN_DAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+
+
+class DashboardWeatherWidget(QFrame):
+    def __init__(self):
+        super(DashboardWeatherWidget, self).__init__()
+
+        self.setFrameShape(QFrame.Shape.StyledPanel)
+
+        layout = QVBoxLayout()
+
+        title = QWidget()
+        title.setFixedHeight(80)
+        titleLayout = QVBoxLayout()
+        titleLabel = QLabel("ПРОГНОЗ")
+        titleLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        titleFont = QFont("Arial", 40)
+        titleFont.setBold(True)
+        titleLabel.setFont(titleFont)
+        titleLayout.addWidget(titleLabel)
+        title.setLayout(titleLayout)
+
+        body = QWidget()
+        bodyLayout = QGridLayout()
+
+        dayFont = QFont("Arial", 24)
+        dayFont.setBold(True)
+        tempFont = QFont("Arial", 24)
+        condFont = QFont("Arial", 20)
+
+        self.dayLabels = []
+        self.tempLabels = []
+        self.condLabels = []
+
+        for i in range(5):
+            dayLabel = QLabel("--")
+            dayLabel.setFont(dayFont)
+            dayLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            tempLabel = QLabel("--° / --°")
+            tempLabel.setFont(tempFont)
+            tempLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            condLabel = QLabel("--")
+            condLabel.setFont(condFont)
+            condLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            bodyLayout.addWidget(dayLabel, i, 0)
+            bodyLayout.addWidget(tempLabel, i, 1)
+            bodyLayout.addWidget(condLabel, i, 2)
+
+            self.dayLabels.append(dayLabel)
+            self.tempLabels.append(tempLabel)
+            self.condLabels.append(condLabel)
+
+        body.setLayout(bodyLayout)
+
+        self.timestampLabel = QLabel("Last updated: --:--:-- --/--/----")
+        self.timestampLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        timestampFont = QFont("Arial", 10)
+        self.timestampLabel.setFont(timestampFont)
+
+        layout.addWidget(title)
+        layout.addWidget(body)
+        layout.addWidget(self.timestampLabel)
+
+        self.setLayout(layout)
+
+    def updateValues(self, forecasts):
+        for i, fc in enumerate(forecasts[:5]):
+            date = datetime.strptime(fc.date, "%Y-%m-%d")
+            day_name = GERMAN_DAYS[date.weekday()]
+            self.dayLabels[i].setText(day_name)
+            self.tempLabels[i].setText(f"{fc.temp_min:.0f}° / {fc.temp_max:.0f}°")
+            self.condLabels[i].setText(WMO_DESCRIPTIONS.get(fc.weathercode, "?"))
+
+        now = datetime.now(tz=ZURICH_TZ)
+        self.timestampLabel.setText(f"Last updated: {now.strftime('%H:%M:%S %d/%m/%Y')}")
+
+    def setDarkTheme(self):
+        pass
+
+    def setLightTheme(self):
+        pass
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -272,16 +388,22 @@ class MainWindow(QMainWindow):
         self.widgets['livRoom'] = DashboardWidget('ЗАЛ')
         self.widgets['SashaRoom'] = DashboardWidget('ПЕЩЕРА')
 
+        self.widgets['outdoor'] = DashboardWidget('БАЛКОН')
+
         layout.addWidget(self.widgets['workRoom'], 0, 0)
         layout.addWidget(self.widgets['bedRoom'], 0, 1)
         layout.addWidget(self.widgets['livRoom'], 0, 2)
-        layout.addWidget(self.widgets['SashaRoom'], 1, 0)
+        layout.addWidget(self.widgets['SashaRoom'], 0, 3)
 
         self.widgets['flowerOleandrSensor'] = DashboardLevelWidget('ОЛЕАНДР', 'images/oleandr.png')
         self.widgets['flowerOlivaSensor'] = DashboardLevelWidget('ОЛИВА', 'images/olive.png')
 
+        self.widgets['weather'] = DashboardWeatherWidget()
+
+        layout.addWidget(self.widgets['outdoor'], 1, 0)
         layout.addWidget(self.widgets['flowerOleandrSensor'], 1, 1)
         layout.addWidget(self.widgets['flowerOlivaSensor'], 1, 2)
+        layout.addWidget(self.widgets['weather'], 1, 3)
 
         widget = QWidget()
         widget.setLayout(layout)
@@ -345,6 +467,29 @@ class MainWindow(QMainWindow):
             logging.error("Failed to read illumination: %s", e)
             return 100  # Default to light theme
 
+    def getWeather(self):
+        try:
+            response = requests.get(
+                CONFIG['OPEN_METEO_URL'],
+                params=CONFIG['OPEN_METEO_PARAMS'],
+                timeout=10,
+            )
+            response.raise_for_status()
+            data = response.json()
+            daily = data['daily']
+            forecasts = []
+            for i in range(len(daily['time'])):
+                forecasts.append(DayForecast(
+                    date=daily['time'][i],
+                    temp_max=daily['temperature_2m_max'][i],
+                    temp_min=daily['temperature_2m_min'][i],
+                    weathercode=daily['weathercode'][i],
+                ))
+            return forecasts
+        except Exception as e:
+            logging.error("Failed to fetch weather: %s", e)
+            return None
+
     def getMoisture(self, alias):
         try:
             results = self.client.query('SELECT time, Moisture FROM Flowers WHERE alias = \'' + alias + '\'  ORDER BY time desc LIMIT 1')
@@ -375,6 +520,7 @@ class MainWindow(QMainWindow):
             livRoom = self.getMeasure('livRoomTempSensor')
             SashaRoom = self.getMeasure('SashaRoomTempSensor')
             bedRoom = self.getMeasure('bedRoomTempSensor')
+            outdoor = self.getMeasure('outdoorTemperatureSensor')
 
             if workRoom:
                 self.widgets['workRoom'].updateValues(workRoom.temperature, workRoom.humidity, workRoom.timestamp)
@@ -384,6 +530,8 @@ class MainWindow(QMainWindow):
                 self.widgets['SashaRoom'].updateValues(SashaRoom.temperature, SashaRoom.humidity, SashaRoom.timestamp)
             if bedRoom:
                 self.widgets['bedRoom'].updateValues(bedRoom.temperature, bedRoom.humidity, bedRoom.timestamp)
+            if outdoor:
+                self.widgets['outdoor'].updateValues(outdoor.temperature, outdoor.humidity, outdoor.timestamp)
 
             oleandrMoisture = self.getMoisture('flowerOleandrSensor')
             olivaMoisture = self.getMoisture('flowerOlivaSensor')
@@ -393,17 +541,23 @@ class MainWindow(QMainWindow):
             if olivaMoisture:
                 self.widgets['flowerOlivaSensor'].updateValues(olivaMoisture.value, olivaMoisture.timestamp)
 
+            forecasts = self.getWeather()
+            if forecasts:
+                self.widgets['weather'].updateValues(forecasts)
+
             temperature = [
                 workRoom.temperature if workRoom else None,
                 bedRoom.temperature if bedRoom else None,
                 livRoom.temperature if livRoom else None,
                 SashaRoom.temperature if SashaRoom else None,
+                outdoor.temperature if outdoor else None,
             ]
             humidity = [
                 workRoom.humidity if workRoom else None,
                 bedRoom.humidity if bedRoom else None,
                 livRoom.humidity if livRoom else None,
                 SashaRoom.humidity if SashaRoom else None,
+                outdoor.humidity if outdoor else None,
             ]
             flowers = [
                 oleandrMoisture.value if oleandrMoisture else None,
